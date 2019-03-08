@@ -1,39 +1,74 @@
 import re
+import operator
 
+# python autocomplete.py
 
 class Candidate:
     def __init__(self, word, confidence):
-        self.__word = word
-        self.__confidence = confidence
+        self.word = word
+        self.confidence = confidence
 
     # returns the autocomplete candidate
     def getWord(self): 
-        return self.__word
+        return self.word
 
     # returns the confidence * for the candidate
     def getConfidence(self):
-        return self.__confidence 
+        return self.confidence 
+
+    def print(self):
+        print("\"" + self.word + "\"", "(" + str(self.confidence) + ")")
+        pass
 
 class TrieNode: 
     def __init__(self):
         self.count = 0
-        # self.letter = letter
         self.children = dict() # letter -> TrieNode
 
 class AutocompleteProvider:
     def __init__(self):
         self.trieRoot = TrieNode()
 
+    def trieCandidates(self, trieParent, substring=""):
+        candidates = []
+        # base
+        if trieParent.count > 0:
+            candidates.append(Candidate(substring, trieParent.count))
+
+        # depth first traversal
+        for letter, trieChild in trieParent.children.items():
+            candidates.extend(self.trieCandidates(trieChild, substring + letter))
+
+        return candidates
+
+    def findTrieNode(self, fragment):
+        trieNode = self.trieRoot
+        for letter in fragment:
+            # fragment not in tree
+            if letter not in trieNode.children.keys():
+                return None
+            else:
+                trieNode = trieNode.children[letter]
+        return trieNode
+
     # List <Candidate> - returns list of candidates ordered by confidence*
     def getWords(self, fragment): 
-        # if len(fragment) == 0:
-            # use entire tree
+        candidates = []
+        if len(fragment) == 0:
+            candidates = self.trieCandidates(self.trieRoot)
+        else:
+            fragmentNode = self.findTrieNode(fragment)
+            if fragmentNode == None:
+                return []
 
-        pass
+            candidates = self.trieCandidates(fragmentNode, fragment)
+
+        candidates.sort(key=lambda x: x.confidence, reverse=True)
+        return candidates
 
     # void - trains the algorithm with the provided passage
     def train(self, passage): 
-        words = re.findall(r'\w+', passage)
+        words = re.findall(r'\w+', passage.lower())
 
         # Build the trie tree
         for word in words:
@@ -43,6 +78,19 @@ class AutocompleteProvider:
                     trieNode.children[letter] = TrieNode()
                 trieNode = trieNode.children[letter]
             trieNode.count += 1
+        pass
+
+    def printTrie(self, trieParent=None, substring=""):
+        if trieParent == None:
+            trieParent = self.trieRoot
+
+        # base
+        if trieParent.count > 0:
+            print(trieParent.count, ":", substring)
+
+        # depth first traversal
+        for letter, trieChild in trieParent.children.items():
+            self.printTrie(trieChild, substring + letter)
         pass
 
 # Analysis
@@ -64,16 +112,7 @@ class AutocompleteProvider:
         # Pretty bad!
         # Can be even better if we only need to show the top X candidates (Ex: top 5)
             # Space O(f)
-
-def main():
-    autocompleteProvider = AutocompleteProvider()
-    autocompleteProvider.train(
-        "The third thing that I need to tell you is that this thing does not think thoroughly.")
-
-
-# python autocomplete.py
-if __name__ == "__main__":
-    main()
+# Typechecking and error handling 
 
 
 
