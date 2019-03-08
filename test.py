@@ -28,6 +28,10 @@ def main():
     [x.print() for x in autocompleteProvider.getWords("")]
     print()
 
+# Considerations
+# Formal unit tests
+    # edge cases
+    # correctness
 
 if __name__ == "__main__":
     main()
